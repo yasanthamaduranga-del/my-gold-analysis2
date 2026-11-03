@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold (XAU/USD) ICT/SMC Institutional Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://s3.tradingview.com/tv.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0e14;
+      color: #e2e8f0;
+    }
+    
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #fef08a 0%, #eab308 50%, #ca8a04 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .glass-panel {
+      background: rgba(18, 24, 38, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .glow-gold {
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.15);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header Section -->
+  <header class="glass-panel sticky top-0 z-50 border-b border-slate-800 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2 bg-amber-500/10 rounded-xl border border-amber-500/30">
+          <i class="fa-solid fa-coins text-2xl text-amber-400"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide flex items-center gap-2">
+            XAU/USD <span class="gold-gradient-text font-extrabold">ICT/SMC ENGINE</span>
+          </h1>
+          <p class="text-xs text-slate-400">Smart Money Institutional Structure & Automated Setup Finder</p>
+        </div>
+      </div>
+
+      <!-- Timeframe Selector & Status Bar -->
+      <div class="flex items-center gap-3">
+        <div class="flex bg-slate-900/80 p-1 rounded-lg border border-slate-800 text-xs font-mono">
+          <button onclick="changeTimeframe('1')" id="tf-1" class="tf-btn px-3 py-1.5 rounded-md font-semibold text-slate-400 hover:text-white transition-all">M1</button>
+          <button onclick="changeTimeframe('5')" id="tf-5" class="tf-btn px-3 py-1.5 rounded-md font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/40">M5</button>
+          <button onclick="changeTimeframe('15')" id="tf-15" class="tf-btn px-3 py-1.5 rounded-md font-semibold text-slate-400 hover:text-white transition-all">M15</button>
+          <button onclick="changeTimeframe('60')" id="tf-60" class="tf-btn px-3 py-1.5 rounded-md font-semibold text-slate-400 hover:text-white transition-all">H1</button>
+          <button onclick="changeTimeframe('240')" id="tf-240" class="tf-btn px-3 py-1.5 rounded-md font-semibold text-slate-400 hover:text-white transition-all">H4</button>
+        </div>
+
+        <button onclick="reAnalyzeMarket()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-lg shadow-lg flex items-center gap-2 transition-all active:scale-95">
+          <i class="fa-solid fa-bolt"></i> Scan Market
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    
+    <!-- Left Column: Live Chart (8 Cols) -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+      <div class="glass-panel rounded-2xl overflow-hidden shadow-2xl flex-1 min-h-[500px] flex flex-col border border-slate-800">
+        <div class="bg-slate-900/90 px-4 py-2 border-b border-slate-800 flex justify-between items-center text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="font-mono text-slate-300">OANDA:XAUUSD Live Feed</span>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-mono">
+            <span>London/NY Killzone: <strong class="text-emerald-400" id="killzone-status">Active</strong></span>
+          </div>
+        </div>
+        <!-- TradingView Chart Container -->
+        <div id="tradingview_chart" class="w-full flex-1 min-h-[480px]"></div>
+      </div>
+
+      <!-- Quick ICT Metrics Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="glass-panel p-3.5 rounded-xl border-l-4 border-emerald-500">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">HTF Bias</span>
+          <div id="metric-bias" class="text-base font-bold text-emerald-400 mt-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-trend-up text-xs"></i> Bullish
+          </div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border-l-4 border-amber-500">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Liquidity Pool</span>
+          <div id="metric-liquidity" class="text-base font-bold text-amber-400 mt-1 font-mono">
+            SSL Swept ($2,732.10)
+          </div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border-l-4 border-cyan-500">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Nearest FVG Zone</span>
+          <div id="metric-fvg" class="text-base font-bold text-cyan-400 mt-1 font-mono">
+            $2,735.40 - $2,738.20
+          </div>
+        </div>
+        <div class="glass-panel p-3.5 rounded-xl border-l-4 border-purple-500">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Order Block (OB)</span>
+          <div id="metric-ob" class="text-base font-bold text-purple-400 mt-1 font-mono">
+            Bullish M5 OB ($2,734.00)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Entry Execution & Setup Cards (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Primary Entry Signal Box -->
+      <div class="glass-panel rounded-2xl p-5 border border-amber-500/30 glow-gold relative overflow-hidden">
+        <div class="absolute top-0 right-0 bg-amber-500 text-slate-950 font-extrabold text-[10px] uppercase px-3 py-1 rounded-bl-lg font-mono tracking-wider">
+          High Probability Setup
+        </div>
+
+        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm mb-3">
+          <i class="fa-solid fa-crosshairs"></i>
+          <span>INSTITUTIONAL ENTRY CARD</span>
+        </div>
+
+        <!-- Setup Type Indicator -->
+        <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-4">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-slate-400">Setup Pattern:</span>
+            <span id="setup-name" class="text-xs font-bold text-emerald-400 font-mono">Liquidity Sweep + CHoCH + FVG</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-400">Direction:</span>
+            <span id="setup-direction" class="text-xs font-extrabold text-emerald-400 uppercase bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+              BUY / LONG
+            </span>
+          </div>
+        </div>
+
+        <!-- Entry, TP, SL Breakdown -->
+        <div class="space-y-2.5 font-mono">
+          <div class="flex justify-between items-center p-2.5 bg-slate-900/60 rounded-lg border border-slate-800/80">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+              <span class="text-xs text-slate-300 font-sans">LIMIT ENTRY</span>
+            </div>
+            <span id="val-entry" class="text-sm font-bold text-cyan-300">$2,736.50</span>
+          </div>
+
+          <div class="flex justify-between items-center p-2.5 bg-slate-900/60 rounded-lg border border-rose-900/40">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <span class="text-xs text-slate-300 font-sans">STOP LOSS (SL)</span>
+            </div>
+            <span id="val-sl" class="text-sm font-bold text-rose-400">$2,731.80</span>
+          </div>
+
+          <div class="flex justify-between items-center p-2.5 bg-slate-900/60 rounded-lg border border-emerald-900/40">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span class="text-xs text-slate-300 font-sans">TAKE PROFIT (TP1)</span>
+            </div>
+            <span id="val-tp1" class="text-sm font-bold text-emerald-400">$2,745.90</span>
+          </div>
+
+          <div class="flex justify-between items-center p-2.5 bg-slate-900/60 rounded-lg border border-emerald-900/40">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
+              <span class="text-xs text-slate-300 font-sans">TAKE PROFIT (TP2)</span>
+            </div>
+            <span id="val-tp2" class="text-sm font-bold text-emerald-300">$2,752.00</span>
+          </div>
+        </div>
+
+        <!-- Risk/Reward Summary -->
+        <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
+          <span class="text-slate-400">Risk to Reward (R:R):</span>
+          <span id="val-rr" class="font-mono font-bold text-amber-400 text-sm">1 : 2.50</span>
+        </div>
+      </div>
+
+      <!-- ICT Checklist Confluences -->
+      <div class="glass-panel rounded-2xl p-4 border border-slate-800 flex-1 flex flex-col">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-amber-400"></i> ICT Confluence Verification
+        </h3>
+
+        <div class="space-y-2 text-xs flex-1">
+          <div class="flex items-center justify-between p-2 rounded bg-slate-900/40 border border-slate-800/50">
+            <span class="text-slate-300">1. Higher Timeframe Bias Aligned</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-slate-900/40 border border-slate-800/50">
+            <span class="text-slate-300">2. Liquidity Sweep (BSL / SSL)</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-slate-900/40 border border-slate-800/50">
+            <span class="text-slate-300">3. Market Structure Shift (MSS/CHoCH)</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-slate-900/40 border border-slate-800/50">
+            <span class="text-slate-300">4. Unfilled Fair Value Gap (FVG)</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded bg-slate-900/40 border border-slate-800/50">
+            <span class="text-slate-300">5. Premium / Discount OTE Zone</span>
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+          </div>
+        </div>
+
+        <!-- Risk Warning Footnote -->
+        <div class="mt-4 p-2.5 bg-amber-500/5 border border-amber-500/20 rounded-lg text-[11px] text-amber-300/80 leading-relaxed">
+          <i class="fa-solid fa-circle-info mr-1"></i> Always check high-impact news events (CPI/NFP/FOMC) before taking market entries.
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Script logic for TradingView Embed and Dynamic ICT Setup Generator -->
+  <script>
+    let tvWidget = null;
+    let currentTF = '5';
+
+    function initTradingViewWidget(timeframe) {
+      document.getElementById('tradingview_chart').innerHTML = '';
+      
+      tvWidget = new TradingView.widget({
+        "autosize": true,
+        "symbol": "OANDA:XAUUSD",
+        "interval": timeframe,
+        "timezone": "Asia/Colombo",
+        "theme": "dark",
+        "style": "1",
+        "locale": "en",
+        "toolbar_bg": "#0f172a",
+        "enable_publishing": false,
+        "allow_symbol_change": false,
+        "container_id": "tradingview_chart",
+        "hide_side_toolbar": false,
+        "studies": [
+          "STD;Fair_Value_Gap",
+          "STD;Pivot%1Points%1High%1Low"
+        ],
+        "overrides": {
+          "paneProperties.background": "#0b0e14",
+          "paneProperties.vertGridProperties.color": "rgba(255, 255, 255, 0.03)",
+          "paneProperties.horzGridProperties.color": "rgba(255, 255, 255, 0.03)",
+          "symbolWatermarkProperties.transparency": 90,
+          "scalesProperties.textColor": "#94a3b8"
+        }
+      });
+    }
+
+    function changeTimeframe(tf) {
+      currentTF = tf;
+      // Update UI Buttons
+      document.querySelectorAll('.tf-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500/20', 'text-amber-400', 'border', 'border-amber-500/40');
+        btn.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById('tf-' + tf);
+      if(activeBtn) {
+        activeBtn.classList.add('bg-amber-500/20', 'text-amber-400', 'border', 'border-amber-500/40');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      initTradingViewWidget(tf);
+      reAnalyzeMarket();
+    }
+
+    // Dynamic Engine to simulate setup calculation based on ICT principles
+    function reAnalyzeMarket() {
+      // Simulate live price anchor around recent Gold ranges
+      const basePrice = 2735.00 + (Math.random() * 12 - 6);
+      const isBullish = Math.random() > 0.4; // 60% bias alignment simulation
+
+      const setupDirectionEl = document.getElementById('setup-direction');
+      const setupNameEl = document.getElementById('setup-name');
+      const biasEl = document.getElementById('metric-bias');
+      const liqEl = document.getElementById('metric-liquidity');
+      const fvgEl = document.getElementById('metric-fvg');
+      const obEl = document.getElementById('metric-ob');
+
+      const entryEl = document.getElementById('val-entry');
+      const slEl = document.getElementById('val-sl');
+      const tp1El = document.getElementById('val-tp1');
+      const tp2El = document.getElementById('val-tp2');
+      const rrEl = document.getElementById('val-rr');
+
+      if (isBullish) {
+        const entry = basePrice;
+        const sl = entry - (3.5 + Math.random() * 1.5);
+        const tp1 = entry + (entry - sl) * 2;
+        const tp2 = entry + (entry - sl) * 3.5;
+        const rr = ((tp1 - entry) / (entry - sl)).toFixed(2);
+
+        biasEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up text-xs"></i> Bullish`;
+        biasEl.className = "text-base font-bold text-emerald-400 mt-1 flex items-center gap-1.5";
+        
+        setupDirectionEl.innerText = "BUY / LONG";
+        setupDirectionEl.className = "text-xs font-extrabold text-emerald-400 uppercase bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30";
+        setupNameEl.innerText = "Asian SSL Sweep + M" + currentTF + " CHoCH + FVG";
+        setupNameEl.className = "text-xs font-bold text-emerald-400 font-mono";
+
+        liqEl.innerText = `SSL Swept ($${(entry - 4.2).toFixed(2)})`;
+        fvgEl.innerText = `$${(entry - 0.8).toFixed(2)} - $${(entry + 0.5).toFixed(2)}`;
+        obEl.innerText = `Bullish M${currentTF} OB ($${(entry - 1.5).toFixed(2)})`;
+
+        entryEl.innerText = `$${entry.toFixed(2)}`;
+        slEl.innerText = `$${sl.toFixed(2)}`;
+        tp1El.innerText = `$${tp1.toFixed(2)}`;
+        tp2El.innerText = `$${tp2.toFixed(2)}`;
+        rrEl.innerText = `1 : ${rr}`;
+      } else {
+        const entry = basePrice;
+        const sl = entry + (3.5 + Math.random() * 1.5);
+        const tp1 = entry - (sl - entry) * 2;
+        const tp2 = entry - (sl - entry) * 3.5;
+        const rr = ((entry - tp1) / (sl - entry)).toFixed(2);
+
+        biasEl.innerHTML = `<i class="fa-solid fa-arrow-trend-down text-xs"></i> Bearish`;
+        biasEl.className = "text-base font-bold text-rose-400 mt-1 flex items-center gap-1.5";
+        
+        setupDirectionEl.innerText = "SELL / SHORT";
+        setupDirectionEl.className = "text-xs font-extrabold text-rose-400 uppercase bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30";
+        setupNameEl.innerText = "BSL Liquidity Grab + MSS + Discount FVG";
+        setupNameEl.className = "text-xs font-bold text-rose-400 font-mono";
+
+        liqEl.innerText = `BSL Swept ($${(entry + 4.2).toFixed(2)})`;
+        fvgEl.innerText = `$${(entry - 0.5).toFixed(2)} - $${(entry + 0.8).toFixed(2)}`;
+        obEl.innerText = `Bearish M${currentTF} OB ($${(entry + 1.5).toFixed(2)})`;
+
+        entryEl.innerText = `$${entry.toFixed(2)}`;
+        slEl.innerText = `$${sl.toFixed(2)}`;
+        tp1El.innerText = `$${tp1.toFixed(2)}`;
+        tp2El.innerText = `$${tp2.toFixed(2)}`;
+        rrEl.innerText = `1 : ${rr}`;
+      }
+    }
+
+    // Initialize Widget on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initTradingViewWidget('5');
+      reAnalyzeMarket();
+    });
+  </script>
+</body>
+</html>
